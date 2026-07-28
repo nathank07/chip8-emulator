@@ -1,6 +1,9 @@
+#include "display.hpp"
 #include "memory.hpp"
+#include "SDL_vars.hpp"
 
 
 struct Chip8 {
-    Memory memory;
+    Display<Color, decltype(draw)>& display;
+    Memory& memory;
 };

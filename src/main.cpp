@@ -12,12 +12,8 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-
-static SDL_Window *window = NULL;
-static SDL_Renderer *renderer = NULL;
-const static int SDL_SCALE = 10;
-const static int SDL_WIDTH = 64 * SDL_SCALE;
-const static int SDL_HEIGHT = 32 * SDL_SCALE;
+#include "SDL_vars.hpp"
+#include <random>
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -42,25 +38,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
-{
-    const char *message = "Hello World!";
-    int w = 0, h = 0;
-    float x, y;
-    const float scale = 4.0f;
+{   
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> distrib_w(0, 63);
+    std::uniform_int_distribution<int> distrib_h(0, 31);
 
-    /* Center the message and scale it up */
-    SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
-    SDL_SetRenderScale(renderer, scale, scale);
-    x = ((w / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE * SDL_strlen(message)) / 2;
-    y = ((h / scale) - SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE) / 2;
+    color = !color;
 
-    /* Draw the message */
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDebugText(renderer, x, y, message);
+    draw(distrib_w(gen), distrib_h(gen), static_cast<Color>(color));
+    
     SDL_RenderPresent(renderer);
-
     return SDL_APP_CONTINUE;
 }
 
