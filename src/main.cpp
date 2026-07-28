@@ -15,6 +15,8 @@
 #include "chip8.hpp"
 #include "SDL_vars.hpp"
 
+static Chip8 c8;
+
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
@@ -28,9 +30,21 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
 
     SDL_SetRenderLogicalPresentation(
-        renderer, SDL_WIDTH, SDL_HEIGHT, 
+        renderer, SDL_WIDTH, SDL_HEIGHT,
         SDL_LOGICAL_PRESENTATION_INTEGER_SCALE
     );
+
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        SDL_WIDTH, SDL_HEIGHT
+    );
+    if (!texture) {
+        SDL_Log("Couldn't create texture: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
     return SDL_APP_CONTINUE;
 }
@@ -47,11 +61,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
-{   
-    Chip8 c8;
+{
     c8.draw_white(16, 16);
-    c8.draw_white(16, 17);
-    c8.draw_black(16, 16);
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }
@@ -59,4 +70,5 @@ SDL_AppResult SDL_AppIterate(void *appstate)
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result)
 {
+    SDL_DestroyTexture(texture);
 }

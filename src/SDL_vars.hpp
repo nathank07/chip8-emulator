@@ -10,6 +10,8 @@
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
+static SDL_Texture *texture = NULL;
+
 const static int SDL_SCALE = 25;
 const static int SDL_WIDTH = 64;
 const static int SDL_HEIGHT = 32;
@@ -43,15 +45,6 @@ void draw_pixel(T w, T h, const PixelState<Derived>& color) {
 
 template <typename T, typename DerivedArr>
 void draw_canvas(T full_w, T full_h, DerivedArr arr) {
-    SDL_Texture *texture = SDL_CreateTexture(
-        renderer, 
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        SDL_WIDTH, SDL_HEIGHT
-    );
-    
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-
     std::array<uint32_t, SDL_WIDTH * SDL_HEIGHT> pixels;
 
     std::transform(arr.begin(), arr.end(), pixels.begin(), [](const auto& color_px) {

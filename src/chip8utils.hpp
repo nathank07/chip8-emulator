@@ -9,6 +9,14 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
 
     Chip8PixelState() = default;
     Chip8PixelState(bool enabled) : enabled(enabled) {}
+    
+    bool operator==(const Chip8PixelState& other) {
+        return enabled == other.enabled;
+    }
+
+    bool operator!=(const Chip8PixelState& other) {
+        return !(*this == other);
+    }
 
     bool enabled = false;
 
