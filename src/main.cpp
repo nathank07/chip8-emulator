@@ -12,17 +12,26 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include "chip8.hpp"
 #include "SDL_vars.hpp"
-#include <random>
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
     /* Create the window */
-    if (!SDL_CreateWindowAndRenderer("Chip 8", SDL_WIDTH, SDL_HEIGHT, SDL_WINDOW_OPENGL, &window, &renderer)) {
+    if (!SDL_CreateWindowAndRenderer("Chip 8", 
+        SDL_WIDTH * SDL_SCALE, SDL_HEIGHT * SDL_SCALE, 
+        SDL_WINDOW_OPENGL, &window, &renderer)
+    ) {
         SDL_Log("Couldn't create window and renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    SDL_SetRenderLogicalPresentation(
+        renderer, SDL_WIDTH, SDL_HEIGHT, 
+        SDL_LOGICAL_PRESENTATION_INTEGER_SCALE
+    );
+
     return SDL_APP_CONTINUE;
 }
 
@@ -39,15 +48,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {   
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> distrib_w(0, 63);
-    std::uniform_int_distribution<int> distrib_h(0, 31);
-
-    color = !color;
-
-    draw(distrib_w(gen), distrib_h(gen), static_cast<Color>(color));
-    
+    Chip8 c8;
+    c8.draw_white(16, 16);
+    c8.draw_white(16, 17);
+    c8.draw_black(16, 16);
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }

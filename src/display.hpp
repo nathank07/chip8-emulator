@@ -1,22 +1,25 @@
 #include <array>
 #include <cstdint>
 
-template <typename Color, typename F>
+template <typename T>
 struct Display {
-    const static uint8_t DISPLAY_WIDTH = 64;
-    const static uint8_t DISPLAY_HEIGHT = 32;
 
-    std::array<Color, DISPLAY_WIDTH * DISPLAY_HEIGHT> display_values;
-    F draw;
+    using Color = typename T::Color;
 
-    Display(F&& draw_width_height) : draw(draw_width_height) {}
+    std::array<Color, T::DISPLAY_WIDTH * T::DISPLAY_HEIGHT> display_values;
 
     Color& at(uint8_t width, uint8_t height) {
-        return display_values[width + (DISPLAY_WIDTH * height)];
+        return display_values[width + (T::DISPLAY_WIDTH * height)];
     }
 
-    void set_px_value(uint8_t width, uint8_t height, Color value) {
+    void draw_pixel(uint8_t width, uint8_t height, Color value) {
         at(width, height) = value;
-        draw(width, height, value);
+        T::debug_pixel_draw(width, height, value);
+    }
+
+    template <typename F>
+    void draw_batch(F&& draw_batch_f) {
+        draw_batch_f(*this);
+        T::render(display_values);
     }
 };
