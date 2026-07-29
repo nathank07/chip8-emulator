@@ -38,6 +38,4 @@ void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const P& color_encod
         });
 
     SDL_UpdateTexture(texture, NULL, &pixels, SDL_WIDTH * sizeof(uint32_t));
-    SDL_RenderClear(renderer);
-    SDL_RenderTexture(renderer, texture, NULL, NULL);
 }
