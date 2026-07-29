@@ -1,5 +1,4 @@
 #pragma once
-#include "SDL3/SDL_pixels.h"
 #include "SDL3/SDL_render.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -21,37 +20,29 @@ struct PixelState {
     template <typename F>
     auto with_color(F&& do_with_color) const {
         const auto& self = static_cast<const Derived&>(*this);
-        return do_with_color(self.get_r(), self.get_g(), self.get_b(), self.get_a());
+        return do_with_color(self.packed());
     }
 };
 
 template <typename T, typename Derived>
 void debug_pixel(T w, T h, const PixelState<Derived>& color) {
-    color.with_color([w, h](auto r, auto g, auto b, auto a) {
+    color.with_color([w, h](auto packed_color) {
         std::cout << "(" 
-            << static_cast<int>(w) << ", " << static_cast<int>(h) << "): "
-            << static_cast<int>(r) << "r " << static_cast<int>(g) << "g "
-            << static_cast<int>(b) << "b " << static_cast<int>(a) << "a\n";
+            << static_cast<int>(w) << ", " << static_cast<int>(h) << "): Palette enum #"
+            << std::hex << static_cast<uint32_t>(packed_color) << std::dec << "\n";
     });
 }
 
-template <typename T, typename Derived>
-void draw_pixel(T w, T h, const PixelState<Derived>& color) {
-    color.with_color([w, h](auto r, auto g, auto b, auto a) {
-        SDL_SetRenderDrawColor(renderer, r, g, b, a);
-        SDL_RenderPoint(renderer, w, h);
-    });
-}
-
-template <typename T, typename DerivedArr>
-void draw_canvas(T full_w, T full_h, DerivedArr arr) {
+template <typename T, typename DerivedArr, typename F>
+void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const F& palette) {
     std::array<uint32_t, SDL_WIDTH * SDL_HEIGHT> pixels;
 
-    std::transform(arr.begin(), arr.end(), pixels.begin(), [](const auto& color_px) {
-        return color_px.with_color([](auto r, auto g, auto b, auto a) {
-            return (r << 24) | (g << 16) | (b << 8) | a;
+    std::transform(arr.begin(), arr.end(), pixels.begin(), 
+        [palette](const auto& color_px) {
+            return color_px.with_color([palette](auto packed_color) {
+                return palette(packed_color);
+            });
         });
-    });
 
     SDL_UpdateTexture(texture, NULL, &pixels, SDL_WIDTH * sizeof(uint32_t));
     SDL_RenderClear(renderer);

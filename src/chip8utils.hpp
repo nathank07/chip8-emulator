@@ -4,8 +4,15 @@
 
 struct Chip8PixelState : PixelState<Chip8PixelState> {
 
+    bool enabled = false;
+
     constexpr static bool ON  = true;
     constexpr static bool OFF = false;
+
+    enum class Chip8Color : std::uint32_t {
+        BACKGROUND,
+        FOREGROUND
+    };
 
     Chip8PixelState() = default;
     Chip8PixelState(bool enabled) : enabled(enabled) {}
@@ -18,23 +25,29 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
         return !(*this == other);
     }
 
-    bool enabled = false;
-
-    uint8_t get_r() const {
-        return enabled ? 255 : 0;
+    Chip8Color color() const {
+        return enabled ? Chip8Color::FOREGROUND : Chip8Color::BACKGROUND;
     }
 
-    uint8_t get_g() const {
-        return enabled ? 255 : 0;
-    }
+};
 
-    uint8_t get_b() const {
-        return enabled ? 255 : 0;
-    }
+struct Chip8Palette {
 
-    uint8_t get_a() const {
-        return 255;
-    }
+    using Color = typename Chip8PixelState::Chip8Color;
+
+    static constexpr auto white_on_black = [](Color color) -> uint32_t {
+        switch (color) {
+            case Color::BACKGROUND: return 0x000000FF;
+            case Color::FOREGROUND: return 0xFFFFFFFF;
+        }
+    };
+
+    static constexpr auto black_on_white = [](Color color) -> uint32_t {
+        switch (color) {
+            case Color::BACKGROUND: return 0xFFFFFFFF;
+            case Color::FOREGROUND: return 0x000000FF;
+        }
+    };
 };
 
 struct Chip8Display {
@@ -45,8 +58,11 @@ struct Chip8Display {
     constexpr static uint8_t DISPLAY_HEIGHT = SDL_HEIGHT;
 
     constexpr static auto render = 
-        [](std::array<Color, DISPLAY_WIDTH * DISPLAY_HEIGHT> canvas) {
-            draw_canvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, canvas);
+        [](const std::array<Color, DISPLAY_WIDTH * DISPLAY_HEIGHT>& canvas) {
+            draw_canvas(
+                DISPLAY_WIDTH, DISPLAY_HEIGHT, 
+                canvas, Chip8Palette::white_on_black
+            );
         };
 
     constexpr static auto debug_pixel_draw = 
