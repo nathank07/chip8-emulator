@@ -15,46 +15,26 @@ const static int SDL_SCALE = 25;
 const static int SDL_WIDTH = 64;
 const static int SDL_HEIGHT = 32;
 
-template <typename Derived>
-struct PixelState {
-    template <typename F>
-    auto with_color(F&& do_with_color) const {
-        const auto& self = static_cast<const Derived&>(*this);
-        return do_with_color(self.color());
-    }
-};
-
 enum HexColor : uint32_t {
     HEX_COLOR_WHITE = 0xFFFFFFFF,
     HEX_COLOR_BLACK = 0x000000FF,
 };
 
-template <typename Derived, typename Color>
-struct Palette {
-    uint32_t hex(Color color) const {
-        const auto& self = static_cast<const Derived&>(*this);
-        return self.convert_color_to_hex(color);
-    }
-};
-
 template <typename T, typename Derived>
-void debug_pixel(T w, T h, const PixelState<Derived>& color) {
-    color.with_color([w, h](auto color) {
-        std::cout << "(" 
-            << static_cast<int>(w) << ", " << static_cast<int>(h) << "): Palette enum #"
-            << std::hex << static_cast<uint32_t>(color) << std::dec << "\n";
-    });
+void debug_pixel(T w, T h, const Derived& color) {
+    auto c = color.color();
+    std::cout << "(" 
+        << static_cast<int>(w) << ", " << static_cast<int>(h) << "): Palette enum #"
+        << std::hex << static_cast<uint32_t>(c) << std::dec << "\n";
 }
 
-template <typename T, typename DerivedArr, typename F>
-void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const F& color_encoder) {
+template <typename T, typename DerivedArr, typename P>
+void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const P& color_encoder) {
     std::array<uint32_t, SDL_WIDTH * SDL_HEIGHT> pixels;
 
     std::transform(arr.begin(), arr.end(), pixels.begin(), 
         [color_encoder](const auto& color_px) {
-            return color_px.with_color([color_encoder](auto color) {
-                return color_encoder.hex(color);
-            });
+            return color_encoder.hex(color_px.color());
         });
 
     SDL_UpdateTexture(texture, NULL, &pixels, SDL_WIDTH * sizeof(uint32_t));

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "SDL_vars.hpp"
 
-struct Chip8PixelState : PixelState<Chip8PixelState> {
+struct Chip8PixelState {
 
     bool enabled = false;
 
@@ -12,11 +12,11 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
     Chip8PixelState() = default;
     Chip8PixelState(bool enabled) : enabled(enabled) {}
     
-    bool operator==(const Chip8PixelState& other) {
+    bool operator==(const Chip8PixelState& other) const {
         return enabled == other.enabled;
     }
 
-    bool operator!=(const Chip8PixelState& other) {
+    bool operator!=(const Chip8PixelState& other) const {
         return !(*this == other);
     }
 
@@ -26,14 +26,14 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
 
 };
 
-struct Chip8Palette : Palette<Chip8Palette, bool> {
+struct Chip8Palette {
 
     using Color = bool;
 
     uint32_t foreground;
     uint32_t background;
 
-    uint32_t convert_color_to_hex(Color color) const {
+    uint32_t hex(Color color) const {
         return color ? foreground : background;
     }
 
