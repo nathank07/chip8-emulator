@@ -63,6 +63,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
     c8.draw_white(16, 16);
+    c8.display.with_palette([](Chip8Palette& p){
+        p.background = HEX_COLOR_WHITE;
+        p.foreground = HEX_COLOR_BLACK;
+    });
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }

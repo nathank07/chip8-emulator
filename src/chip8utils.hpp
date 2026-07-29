@@ -9,7 +9,7 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
     constexpr static bool ON  = true;
     constexpr static bool OFF = false;
 
-    enum class Chip8Color : std::uint32_t {
+    enum class Chip8Color {
         BACKGROUND,
         FOREGROUND
     };
@@ -31,39 +31,41 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
 
 };
 
-struct Chip8Palette {
+struct Chip8Palette : Palette<Chip8Palette, Chip8PixelState::Chip8Color> {
 
     using Color = typename Chip8PixelState::Chip8Color;
 
-    static constexpr auto white_on_black = [](Color color) -> uint32_t {
-        switch (color) {
-            case Color::BACKGROUND: return 0x000000FF;
-            case Color::FOREGROUND: return 0xFFFFFFFF;
-        }
-    };
+    uint32_t background = HEX_COLOR_BLACK;
+    uint32_t foreground = HEX_COLOR_WHITE;
 
-    static constexpr auto black_on_white = [](Color color) -> uint32_t {
+    uint32_t convert_color_to_hex(Color color) const {
         switch (color) {
-            case Color::BACKGROUND: return 0xFFFFFFFF;
-            case Color::FOREGROUND: return 0x000000FF;
+            case Color::BACKGROUND: return background;
+            case Color::FOREGROUND: return foreground;
         }
-    };
+        __builtin_unreachable();
+    }
+
+    Chip8Palette(
+        uint32_t foreground = HEX_COLOR_WHITE, 
+        uint32_t background = HEX_COLOR_BLACK)
+        : foreground(foreground), background(background) {} 
 };
 
 struct Chip8Display {
 
     using Color = Chip8PixelState;
+    using Palette = Chip8Palette;
 
     constexpr static uint8_t DISPLAY_WIDTH = SDL_WIDTH;
     constexpr static uint8_t DISPLAY_HEIGHT = SDL_HEIGHT;
 
-    constexpr static auto render = 
-        [](const std::array<Color, DISPLAY_WIDTH * DISPLAY_HEIGHT>& canvas) {
-            draw_canvas(
-                DISPLAY_WIDTH, DISPLAY_HEIGHT, 
-                canvas, Chip8Palette::white_on_black
-            );
-        };
+    constexpr static auto render = [](
+        const std::array<Color, DISPLAY_WIDTH * DISPLAY_HEIGHT>& canvas,
+        const Palette& palette
+    ) {
+        draw_canvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, canvas, palette);
+    };
 
     constexpr static auto debug_pixel_draw = 
         [](uint8_t w, uint8_t h, Color c) {

@@ -24,6 +24,19 @@ struct PixelState {
     }
 };
 
+enum HexColor : uint32_t {
+    HEX_COLOR_WHITE = 0xFFFFFFFF,
+    HEX_COLOR_BLACK = 0x000000FF,
+};
+
+template <typename Derived, typename Color>
+struct Palette {
+    uint32_t hex(Color color) const {
+        const auto& self = static_cast<const Derived&>(*this);
+        return self.convert_color_to_hex(color);
+    }
+};
+
 template <typename T, typename Derived>
 void debug_pixel(T w, T h, const PixelState<Derived>& color) {
     color.with_color([w, h](auto color) {
@@ -40,7 +53,7 @@ void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const F& color_encod
     std::transform(arr.begin(), arr.end(), pixels.begin(), 
         [color_encoder](const auto& color_px) {
             return color_px.with_color([color_encoder](auto color) {
-                return color_encoder(color);
+                return color_encoder.hex(color);
             });
         });
 
