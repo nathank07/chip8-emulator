@@ -9,11 +9,6 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
     constexpr static bool ON  = true;
     constexpr static bool OFF = false;
 
-    enum class Chip8Color {
-        BACKGROUND,
-        FOREGROUND
-    };
-
     Chip8PixelState() = default;
     Chip8PixelState(bool enabled) : enabled(enabled) {}
     
@@ -25,30 +20,27 @@ struct Chip8PixelState : PixelState<Chip8PixelState> {
         return !(*this == other);
     }
 
-    Chip8Color color() const {
-        return enabled ? Chip8Color::FOREGROUND : Chip8Color::BACKGROUND;
+    bool color() const {
+        return enabled;
     }
 
 };
 
-struct Chip8Palette : Palette<Chip8Palette, Chip8PixelState::Chip8Color> {
+struct Chip8Palette : Palette<Chip8Palette, bool> {
 
-    using Color = typename Chip8PixelState::Chip8Color;
+    using Color = bool;
 
-    uint32_t background = HEX_COLOR_BLACK;
-    uint32_t foreground = HEX_COLOR_WHITE;
+    uint32_t foreground;
+    uint32_t background;
 
     uint32_t convert_color_to_hex(Color color) const {
-        switch (color) {
-            case Color::BACKGROUND: return background;
-            case Color::FOREGROUND: return foreground;
-        }
-        __builtin_unreachable();
+        return color ? foreground : background;
     }
 
     Chip8Palette(
         uint32_t foreground = HEX_COLOR_WHITE, 
-        uint32_t background = HEX_COLOR_BLACK)
+        uint32_t background = HEX_COLOR_BLACK
+    )
         : foreground(foreground), background(background) {} 
 };
 
