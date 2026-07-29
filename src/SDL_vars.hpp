@@ -20,27 +20,27 @@ struct PixelState {
     template <typename F>
     auto with_color(F&& do_with_color) const {
         const auto& self = static_cast<const Derived&>(*this);
-        return do_with_color(self.packed());
+        return do_with_color(self.color());
     }
 };
 
 template <typename T, typename Derived>
 void debug_pixel(T w, T h, const PixelState<Derived>& color) {
-    color.with_color([w, h](auto packed_color) {
+    color.with_color([w, h](auto color) {
         std::cout << "(" 
             << static_cast<int>(w) << ", " << static_cast<int>(h) << "): Palette enum #"
-            << std::hex << static_cast<uint32_t>(packed_color) << std::dec << "\n";
+            << std::hex << static_cast<uint32_t>(color) << std::dec << "\n";
     });
 }
 
 template <typename T, typename DerivedArr, typename F>
-void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const F& palette) {
+void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const F& color_encoder) {
     std::array<uint32_t, SDL_WIDTH * SDL_HEIGHT> pixels;
 
     std::transform(arr.begin(), arr.end(), pixels.begin(), 
-        [palette](const auto& color_px) {
-            return color_px.with_color([palette](auto packed_color) {
-                return palette(packed_color);
+        [color_encoder](const auto& color_px) {
+            return color_px.with_color([color_encoder](auto color) {
+                return color_encoder(color);
             });
         });
 
