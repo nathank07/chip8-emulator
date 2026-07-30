@@ -14,6 +14,8 @@
 #include <SDL3/SDL_main.h>
 #include "chip8.hpp"
 #include "SDL_vars.hpp"
+#include "instructions.hpp"
+#include "utils.hpp"
 
 static Chip8 c8;
 
@@ -46,12 +48,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     }
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
-    c8.draw_white(16, 16);
     c8.display.with_palette([](Chip8Palette& p){
         p.background = 0xffc8ddff;
         p.foreground = 0xfb6f92ff;
     });
-
+    c8.execute(Chip8ISA::Clear{});
+    c8.execute(Chip8ISA::Add{1, 68});
+    c8.execute(Chip8ISA::Add{2, 40});
+    c8.execute(Chip8ISA::Display{1, 2, 10});
     return SDL_APP_CONTINUE;
 }
 

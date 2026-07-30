@@ -10,13 +10,23 @@ struct Display {
     std::array<Color, T::DISPLAY_WIDTH * T::DISPLAY_HEIGHT> display_values;
     Palette palette{};
 
-    Color& at(uint8_t width, uint8_t height) {
-        return display_values[width + (T::DISPLAY_WIDTH * height)];
+    Color& at(uint8_t x, uint8_t y) {
+        return display_values[x + (T::DISPLAY_WIDTH * y)];
     }
 
-    void draw_pixel(uint8_t width, uint8_t height, Color value) {
-        at(width, height) = value;
-        T::debug_pixel_draw(width, height, value);
+    void clear_with(Color value) {
+        display_values.fill(value);
+        T::render(display_values, palette);
+    }
+
+    void draw_pixel(uint8_t x, uint8_t y, Color value) {
+        at(x, y) = value;
+        T::debug_pixel_draw(x, y, value);
+    }
+
+    template <typename F>
+    auto with_pixel(uint8_t x, uint8_t y, F&& do_with_pixel) {
+        return do_with_pixel(at(x, y));
     }
 
     template <typename F>

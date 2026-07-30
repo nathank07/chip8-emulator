@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
+
+set(CMAKE_CXX_COMPILER g++-13)
+
 project(chip8)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # set the output directory for built objects.
 # This makes sure that the dynamic library goes into the build directory automatically.
