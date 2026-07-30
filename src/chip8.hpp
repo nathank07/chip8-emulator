@@ -34,12 +34,12 @@ struct Chip8 {
     }
 
     void _display(const Chip8ISA::Display& instr) {
-        auto x = cpu.reg(instr.x_coordinate.r) & (Chip8Display::DISPLAY_WIDTH  - 1);
-        auto y = cpu.reg(instr.y_coordinate.r) & (Chip8Display::DISPLAY_HEIGHT - 1);
+        uint16_t x = cpu.reg(instr.x_coordinate.r) % Chip8Display::DISPLAY_WIDTH;
+        uint16_t y = cpu.reg(instr.y_coordinate.r) % Chip8Display::DISPLAY_HEIGHT;
         auto row_count = instr.rows.v;
         uint16_t arr_idx = cpu.index_register;
         
-        display.draw_batch([this, instr, x, y, arr_idx, row_count](auto& d){
+        display.draw_batch([this, x, y, arr_idx, row_count](auto& d){
 
             bool vf = false;
 
@@ -55,7 +55,7 @@ struct Chip8 {
                         continue;
                      }  
                       
-                    d.with_pixel(cx, cy, [this, &vf, byte, col](Chip8Display::Color& c) {
+                    d.with_pixel(cx, cy, [&vf, byte, col](Chip8Display::Color& c) {
                         bool was_enabled = c.enabled;
                         c.enabled ^= byte >> (7 - col) & 0x1;
                         if (was_enabled && !c.enabled) vf = true;
