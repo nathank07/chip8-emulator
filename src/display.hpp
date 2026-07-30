@@ -1,4 +1,6 @@
+#pragma once
 #include <array>
+#include <cassert>
 #include <cstdint>
 
 template <typename T>
@@ -11,6 +13,7 @@ struct Display {
     Palette palette{};
 
     Color& at(uint8_t x, uint8_t y) {
+        assert(x + (T::DISPLAY_WIDTH * y) < display_values.size());
         return display_values[x + (T::DISPLAY_WIDTH * y)];
     }
 

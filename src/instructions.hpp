@@ -98,11 +98,14 @@ namespace Chip8ISA {
         SkipEqReg, SkipNeqReg, SetImm, SetReg, SetIndexReg, Add, Display
     >;
 
+   
     struct UnimplementedInstruction {
         uint16_t bytes;
     };
 
-    inline std::expected<Chip8ISA::Instruction, UnimplementedInstruction> decode(uint16_t bytes) {
+    using InstructionError = UnimplementedInstruction;
+
+    inline std::expected<Chip8ISA::Instruction, InstructionError> decode(uint16_t bytes) {
         
         uint8_t opcode = bytes >> 12;
 
@@ -134,6 +137,8 @@ namespace Chip8ISA {
                 
                 if ((bytes & 0xFFF) == 0x0EE)
                     return ReturnSubroutine{};
+
+                break;
             }
 
             case 0x1: {

@@ -11,7 +11,7 @@ struct Chip8Properties {
     uint16_t advance_ip_with(const Instruction& instruction) {
         return std::visit(overloads {
             [&](const Chip8ISA::Jump&) { return 0; },
-            [&](const auto&)           { return 4; },
+            [&](const auto&)           { return 2; },
         }, instruction);
     }
 };

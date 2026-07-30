@@ -12,16 +12,40 @@
 #define SDL_MAIN_USE_CALLBACKS 1  /* use the callbacks instead of main() */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <vector>
 #include "chip8.hpp"
 #include "SDL_vars.hpp"
 #include "instructions.hpp"
-#include "utils.hpp"
 
 static Chip8 c8;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <file>" << std::endl;
+        return SDL_APP_FAILURE;
+    }
+
+    std::ifstream rom(argv[1], std::ios::binary);
+    if (!rom) {
+        std::cerr << "Couldn't open ROM file: " << argv[1] << std::endl;
+        return SDL_APP_FAILURE;
+    }
+
+    std::vector<uint8_t> rom_data(
+        (std::istreambuf_iterator<char>(rom)),
+        std::istreambuf_iterator<char>()
+    );
+
+    if (!c8.load_rom(rom_data)) {
+        std::cerr << "ROM too large to fit in memory: " << argv[1] << std::endl;
+        return SDL_APP_FAILURE;
+    }
+
     /* Create the window */
     if (!SDL_CreateWindowAndRenderer("Chip 8", 
         SDL_WIDTH * SDL_SCALE, SDL_HEIGHT * SDL_SCALE, 
@@ -52,10 +76,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         p.background = 0xffc8ddff;
         p.foreground = 0xfb6f92ff;
     });
-    c8.execute(Chip8ISA::Clear{});
-    c8.execute(Chip8ISA::Add{1, 68});
-    c8.execute(Chip8ISA::Add{2, 40});
-    c8.execute(Chip8ISA::Display{1, 2, 10});
+
     return SDL_APP_CONTINUE;
 }
 
@@ -72,6 +93,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
+    std::cout << std::hex << c8.memory.fetch(c8.cpu.program_counter) << "\n";
+
+    c8.run()
+        .or_else([](Chip8ISA::UnimplementedInstruction i) -> std::expected<void, Chip8ISA::InstructionError> {
+            std::cout << "unimplemented: "  << i.bytes << "\n";
+            return {};
+        });
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);

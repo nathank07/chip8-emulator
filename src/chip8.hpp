@@ -6,7 +6,8 @@
 #include "cpu.hpp"
 #include "chip8properties.hpp"
 #include "utils.hpp"
-
+#include <cstring>
+#include <expected>
 
 struct Chip8 {
 
@@ -16,6 +17,21 @@ struct Chip8 {
     CPU cpu;
     Memory memory;
     Chip8Properties props;
+
+    template <typename T>
+    bool load_rom(T arr) {
+        if (arr.size() > 0xFFF - 0x200 + 1)
+            return false;
+
+        std::memcpy(memory.memory.data() + 0x200, arr.data(), arr.size());
+        cpu = CPU();
+        return true;
+    }
+
+    std::expected<void, Chip8ISA::InstructionError> run() {
+        return Chip8ISA::decode(memory.fetch(cpu.program_counter))
+            .transform([this](const Instruction& i) { execute(i); });
+    }
 
     void _display(const Chip8ISA::Display& i) {
         auto x = cpu.reg(i.x_coordinate.r) & (Chip8Display::DISPLAY_WIDTH  - 1);
@@ -43,7 +59,7 @@ struct Chip8 {
                 display.clear_with(Chip8PixelState::OFF); 
             },
             [this](const Chip8ISA::Jump& i) { 
-                cpu.program_counter += i.imm.v; 
+                cpu.program_counter = i.imm.v; 
             },
             [this](const Chip8ISA::SetImm& i) {
                 cpu.reg(i.reg.r) = i.imm.v;
@@ -61,17 +77,5 @@ struct Chip8 {
         }, instruction);
 
         cpu.program_counter += props.advance_ip_with(instruction);
-    }
-
-    void draw_white(uint8_t w, uint8_t h) {
-        display.draw_batch([w, h](auto& d) {
-            d.draw_pixel(w, h, Chip8PixelState::ON);
-        });
-    }
-
-    void draw_black(uint8_t w, uint8_t h) {
-        display.draw_batch([w, h](auto& d) {
-            d.draw_pixel(w, h, Chip8PixelState::OFF);
-        });
     }
 };
