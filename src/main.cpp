@@ -77,6 +77,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         p.foreground = 0xfb6f92ff;
     });
 
+    while (c8.mem.fetch(c8.cpu.program_counter) != 0x1228) {
+        std::cout << std::hex << c8.mem.fetch(c8.cpu.program_counter) << "\n";
+        c8.run()
+            .or_else([](Chip8ISA::UnimplementedInstruction i) -> std::expected<void, Chip8ISA::InstructionError> {
+                std::cout << "unimplemented: "  << i.bytes << "\n";
+                return {};
+            });}
+
     return SDL_APP_CONTINUE;
 }
 
@@ -93,13 +101,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    std::cout << std::hex << c8.memory.fetch(c8.cpu.program_counter) << "\n";
-
-    c8.run()
-        .or_else([](Chip8ISA::UnimplementedInstruction i) -> std::expected<void, Chip8ISA::InstructionError> {
-            std::cout << "unimplemented: "  << i.bytes << "\n";
-            return {};
-        });
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);

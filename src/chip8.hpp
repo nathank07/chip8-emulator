@@ -15,7 +15,7 @@ struct Chip8 {
 
     Display<Chip8Display> display;
     CPU cpu;
-    Memory memory;
+    Memory mem;
     Chip8Properties props;
 
     template <typename T>
@@ -23,33 +23,42 @@ struct Chip8 {
         if (arr.size() > 0xFFF - 0x200 + 1)
             return false;
 
-        std::memcpy(memory.memory.data() + 0x200, arr.data(), arr.size());
+        std::memcpy(mem.memory.data() + 0x200, arr.data(), arr.size());
         cpu = CPU();
         return true;
     }
 
     std::expected<void, Chip8ISA::InstructionError> run() {
-        return Chip8ISA::decode(memory.fetch(cpu.program_counter))
+        return Chip8ISA::decode(mem.fetch(cpu.program_counter))
             .transform([this](const Instruction& i) { execute(i); });
     }
 
-    void _display(const Chip8ISA::Display& i) {
-        auto x = cpu.reg(i.x_coordinate.r) & (Chip8Display::DISPLAY_WIDTH  - 1);
-        auto y = cpu.reg(i.y_coordinate.r) & (Chip8Display::DISPLAY_HEIGHT - 1);
+    void _display(const Chip8ISA::Display& instr) {
+        auto x = cpu.reg(instr.x_coordinate.r) & (Chip8Display::DISPLAY_WIDTH  - 1);
+        auto y = cpu.reg(instr.y_coordinate.r) & (Chip8Display::DISPLAY_HEIGHT - 1);
+        auto row_count = instr.rows.v;
+        uint16_t arr_idx = cpu.index_register;
         
-        // Todo: implement sprite loading
-        display.draw_batch([this, i, x, y](auto& d){
+        display.draw_batch([this, instr, x, y, arr_idx, row_count](auto& d){
 
-            bool set_off = false;
+            bool vf = false;
 
-            d.with_pixel(x, y, [&set_off](Chip8Display::Color& c) {
-                if (c.enabled)
-                    set_off = true;
-                c.enabled = !c.enabled;
-            });
+            for (uint16_t row = 0; row < row_count; ++row) {
+                uint8_t byte = mem[arr_idx + row];
 
-            cpu.reg(0xF) = static_cast<uint8_t>(set_off);
+                for (uint8_t col = 0; col < 8; ++col) {
+                    auto cx = std::clamp(x + col, 0, Chip8Display::DISPLAY_WIDTH - 1);
+                    auto cy = std::clamp(y + row, 0, Chip8Display::DISPLAY_HEIGHT - 1);
 
+                    d.with_pixel(cx, cy, [this, &vf, byte, col](Chip8Display::Color& c) {
+                        c.enabled ^= byte >> (7 - col) & 0x1;
+                        if (c.enabled) vf = true;
+                    });
+
+                }
+            }
+
+            cpu.reg(0xF) = static_cast<uint8_t>(vf);
         });
     }
 

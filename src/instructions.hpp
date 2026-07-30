@@ -90,7 +90,7 @@ namespace Chip8ISA {
     struct Display {
         const Operand4_reg x_coordinate;
         const Operand4_reg y_coordinate;
-        const Operand4_imm pixel_height;
+        const Operand4_imm rows;
     };
 
     using Instruction = std::variant<
@@ -167,7 +167,7 @@ namespace Chip8ISA {
                 return Display{
                     .x_coordinate = _x__(bytes),
                     .y_coordinate = __x_(bytes),
-                    .pixel_height = ___x(bytes)
+                    .rows = ___x(bytes)
                 };
             }
         }
