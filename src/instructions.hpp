@@ -28,11 +28,16 @@ namespace Chip8ISA {
     };
 
     struct Operand4_reg {
-        const uint8_t r;
         Operand4_reg() = delete;
-        Operand4_reg(uint8_t n) : r(n) {
-            assert((n & 0xF0) == 0x0);
+        Operand4_reg(uint8_t reg) : reg(reg) {
+            assert((reg & 0xF0) == 0x0);
         }
+        template <typename F>
+        uint8_t& v(F&& reader) const {
+            return reader(reg);
+        }
+        private:
+        const uint8_t reg;
     };
 
     struct Operand4_imm {
