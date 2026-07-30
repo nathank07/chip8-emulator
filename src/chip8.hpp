@@ -11,26 +11,12 @@
 
 struct Chip8 {
 
-    using ISA = Chip8ISA<Chip8>;
-    using Instruction = ISA::Instruction;
+    using Instruction = Chip8ISA::Instruction;
 
     Display<Chip8Display> display;
     CPU cpu;
     Memory mem;
-
-    ISA instructions;
     Chip8Properties props;
-
-    Chip8() : instructions(*this) {};
-
-    uint8_t& reader(uint8_t r) {
-        return cpu.reg(r);
-    }
-
-    uint8_t& dereferencer(uint8_t r) {
-        return mem[cpu.reg(r)];
-    }
-
 
     template <typename T>
     bool load_rom(T arr) {
@@ -42,14 +28,14 @@ struct Chip8 {
         return true;
     }
 
-    std::expected<void, ISA::InstructionError> run() {
-        return instructions.decode(mem.fetch(cpu.program_counter))
+    std::expected<void, Chip8ISA::InstructionError> run() {
+        return Chip8ISA::decode(mem.fetch(cpu.program_counter))
             .transform([this](const Instruction& i) { execute(i); });
     }
 
-    void _display(const ISA::Display& instr) {
-        uint16_t x = *instr.x_coordinate % Chip8Display::DISPLAY_WIDTH;
-        uint16_t y = *instr.y_coordinate % Chip8Display::DISPLAY_HEIGHT;
+    void _display(const Chip8ISA::Display& instr) {
+        uint16_t x = cpu.reg(instr.x_coordinate.r) % Chip8Display::DISPLAY_WIDTH;
+        uint16_t y = cpu.reg(instr.y_coordinate.r) % Chip8Display::DISPLAY_HEIGHT;
         auto row_count = instr.rows.v;
         uint16_t arr_idx = cpu.index_register;
         
@@ -84,59 +70,57 @@ struct Chip8 {
 
     void execute(Instruction instruction) {
         std::visit(overloads{
-            [this](const ISA::Clear&) { 
+            [this](const Chip8ISA::Clear&) { 
                 display.clear_with(Chip8PixelState::OFF); 
             },
-            [this](const ISA::Jump& i) { 
+            [this](const Chip8ISA::Jump& i) { 
                 cpu.program_counter = i.imm.v; 
             },
-            [this](const ISA::CallSubroutine& i) {
+            [this](const Chip8ISA::CallSubroutine& i) {
                 cpu.function_pointers.push(cpu.program_counter);
                 cpu.program_counter = i.imm.v;
             },
-            [this](const ISA::ReturnSubroutine&) {
+            [this](const Chip8ISA::ReturnSubroutine&) {
                 const auto top = cpu.function_pointers.top();
                 cpu.function_pointers.pop(); 
                 cpu.program_counter = top;
             },
-            [this](const ISA::SkipEqImm& i) {
+            [this](const Chip8ISA::SkipEqImm& i) {
+                cpu.program_counter += 
+                    props.skip(cpu.reg(i.reg.r) == i.imm.v);
+            },
+            [this](const Chip8ISA::SkipNeqImm& i) {
+                cpu.program_counter += 
+                    props.skip(cpu.reg(i.reg.r) != i.imm.v);
+            },
+            [this](const Chip8ISA::SkipEqReg& i) {
                 cpu.program_counter += props.skip(
-                    i.v1.v() == i.v2.v
+                    cpu.reg(i.r1.r) == cpu.reg(i.r2.r)
                 );
             },
-            [this](const ISA::SkipNeqImm& i) {
+            [this](const Chip8ISA::SkipNeqReg& i) {
                 cpu.program_counter += props.skip(
-                    i.v1.v() != i.v2.v
+                    cpu.reg(i.r1.r) != cpu.reg(i.r2.r)
                 );
             },
-            [this](const ISA::SkipEqReg& i) {
-                cpu.program_counter += props.skip(
-                    i.v1.v() == i.v2.v()
-                );
+            [this](const Chip8ISA::SetImm& i) {
+                cpu.reg(i.dst.r) = i.src.v;
             },
-            [this](const ISA::SkipNeqReg& i) {
-                cpu.program_counter += props.skip(
-                    i.v1.v() != i.v2.v()
-                );
+            [this](const Chip8ISA::SetReg& i) {
+                cpu.reg(i.dst.r) = cpu.reg(i.src.r);
             },
-            [this](const ISA::SetImm& i) {
-                *i.dst = i.src.v;
-            },
-            [this](const ISA::SetReg& i) {
-                *i.dst = *i.src;
-            },
-            [this](const ISA::SetIndexReg& i) {
+            [this](const Chip8ISA::SetIndexReg& i) {
                 cpu.index_register = i.imm.v;
             },
-            [this](const ISA::Add& i) {
-                *i.dst += i.src.v;
+            [this](const Chip8ISA::Add& i) {
+                cpu.reg(i.dst.r) += i.src.v;
             },
-            [this](const ISA::Display& i) { _display(i); },
+            [this](const Chip8ISA::Display& i) { _display(i); },
             // [](const auto&) {
             //     std::cerr << "Unimplemented Instruction\n";
             // },
         }, instruction);
 
-        cpu.program_counter += props.advance_ip_with<ISA>(instruction);
+        cpu.program_counter += props.advance_ip_with(instruction);
     }
 };

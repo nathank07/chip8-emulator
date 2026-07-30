@@ -3,16 +3,9 @@
 #include <cassert>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <variant>
 
-
-template <typename T>
-struct Chip8ISA {
-
-    std::reference_wrapper<T> m;
-
-    Chip8ISA(T& mt) : m(mt) {}
+namespace Chip8ISA {
 
     constexpr static auto _xxx = [](uint16_t b) -> uint16_t {
         return b & 0xFFF;
@@ -34,51 +27,13 @@ struct Chip8ISA {
         return b >> 4 & 0xF;
     };
 
-    
     struct Operand4_reg {
+        const uint8_t r;
         Operand4_reg() = delete;
-        Operand4_reg(uint8_t reg, T& decoder) : reg(reg), decoder(decoder) {
-            assert((reg & 0xF0) == 0x0);
+        Operand4_reg(uint8_t n) : r(n) {
+            assert((n & 0xF0) == 0x0);
         }
-
-        uint8_t v() const {
-            return decoder.get().reader(reg);
-        }
-
-        int operator&() = delete;
-        int operator*() = delete;
-
-        private:
-        const uint8_t reg;
-        std::reference_wrapper<T> decoder;
     };
-
-    Operand4_reg r(uint8_t reg) {
-        return Operand4_reg(reg, m);
-    }
-
-    struct Operand4_reg_ptr {
-        Operand4_reg_ptr() = delete;
-        Operand4_reg_ptr(uint8_t reg, T& decoder) : reg(reg), decoder(decoder) {
-            assert((reg & 0xF0) == 0x0);
-        }
-
-        uint8_t addr() const {
-            return decoder.get().reader(reg);
-        };
-
-        uint8_t& operator*() const {
-            return decoder.get().dereferencer(reg);
-        };
-
-        private:
-        const uint8_t reg;
-        std::reference_wrapper<T> decoder;
-    };
-
-    Operand4_reg_ptr p(uint8_t reg) {
-        return Operand4_reg_ptr(reg, m);
-    }
 
     struct Operand4_imm {
         const uint8_t v;
@@ -120,33 +75,33 @@ struct Chip8ISA {
     struct ReturnSubroutine {};
 
     struct SkipEqImm {
-        const Operand4_reg v1;
-        const Operand8_imm v2;
+        const Operand4_reg reg;
+        const Operand8_imm imm;
     };
 
     struct SkipNeqImm {
-        const Operand4_reg v1;
-        const Operand8_imm v2;
+        const Operand4_reg reg;
+        const Operand8_imm imm;
     };
 
     struct SkipEqReg {
-        const Operand4_reg v1;
-        const Operand4_reg v2;
+        const Operand4_reg r1;
+        const Operand4_reg r2;
     };
 
     struct SkipNeqReg {
-        const Operand4_reg v1;
-        const Operand4_reg v2;
+        const Operand4_reg r1;
+        const Operand4_reg r2;
     };
 
     struct SetImm {
-        const Operand4_reg_ptr dst;
+        const Operand4_reg dst;
         const Operand8_imm src; 
     };
 
     struct SetReg {
-        const Operand4_reg_ptr dst;
-        const Operand4_reg_ptr src;
+        const Operand4_reg dst;
+        const Operand4_reg src;
     };
 
     struct SetIndexReg {
@@ -154,16 +109,16 @@ struct Chip8ISA {
     };
 
     struct AddIndexReg {
-        const Operand4_reg_ptr src;
+        const Operand4_reg src;
     };
 
     struct Add {
-        const Operand4_reg_ptr dst;
+        const Operand4_reg dst;
         const Operand8_imm src;
     };
 
     struct Sub {
-        const Operand4_reg_ptr dst;
+        const Operand4_reg dst;
         const Operand8_imm src;
     };
 
@@ -198,8 +153,8 @@ struct Chip8ISA {
     };
 
     struct Display {
-        const Operand4_reg_ptr x_coordinate;
-        const Operand4_reg_ptr y_coordinate;
+        const Operand4_reg x_coordinate;
+        const Operand4_reg y_coordinate;
         const Operand4_imm rows;
     };
 
@@ -255,7 +210,7 @@ struct Chip8ISA {
 
     using InstructionError = UnimplementedInstruction;
 
-    std::expected<Instruction, InstructionError> decode(uint16_t bytes) {
+    inline std::expected<Chip8ISA::Instruction, InstructionError> decode(uint16_t bytes) {
         
         uint8_t opcode = bytes >> 12;
 
@@ -280,25 +235,25 @@ struct Chip8ISA {
             }
 
             case 0x3: {
-                return SkipEqImm{
-                    .v1 = r(_x__(bytes)),
-                    .v2 =   __xx(bytes)
+                return SkipEqImm{ 
+                    .reg = _x__(bytes),
+                    .imm = __xx(bytes) 
                 };
             }
 
             case 0x4: {
-                return SkipNeqImm{
-                    .v1 = r(_x__(bytes)),
-                    .v2 =   __xx(bytes)
+                return SkipNeqImm{ 
+                    .reg = _x__(bytes),
+                    .imm = __xx(bytes) 
                 };
             }
 
             case 0x5: {
 
                 if (___x(bytes) == 0x0)
-                    return SkipEqReg{
-                        .v1 = r(_x__(bytes)),
-                        .v2 = r(__x_(bytes))
+                    return SkipEqReg{ 
+                        .r1 = _x__(bytes),
+                        .r2 = __x_(bytes) 
                     };
 
                 break;
@@ -306,34 +261,34 @@ struct Chip8ISA {
 
             case 0x6: {
                 return SetImm{
-                    .dst = p(_x__(bytes)),
-                    .src =   __xx(bytes)
+                    .dst = _x__(bytes),
+                    .src = __xx(bytes)
                 };
             }
 
             case 0x7: {
                 return Add{
-                    .dst = p(_x__(bytes)),
-                    .src =   __xx(bytes)
+                    .dst = _x__(bytes),
+                    .src = __xx(bytes)
                 };
             }
 
             case 0x8: {
                 if (___x(bytes) == 0x0)
                     return SetReg{
-                        .dst = p(_x__(bytes)),
-                        .src = p(__x_(bytes))
+                        .dst = _x__(bytes),
+                        .src = __x_(bytes)
                     };
-
+                
                 break;
             }
 
             case 0x9: {
 
                 if (___x(bytes) == 0x0)
-                    return SkipNeqReg{
-                        .v1 = r(_x__(bytes)),
-                        .v2 = r(__x_(bytes))
+                    return SkipNeqReg{ 
+                        .r1 = _x__(bytes),
+                        .r2 = __x_(bytes) 
                     };
 
                 break;
@@ -345,9 +300,9 @@ struct Chip8ISA {
 
             case 0xD: {
                 return Display{
-                    .x_coordinate = p(_x__(bytes)),
-                    .y_coordinate = p(__x_(bytes)),
-                    .rows         =   ___x(bytes)
+                    .x_coordinate = _x__(bytes),
+                    .y_coordinate = __x_(bytes),
+                    .rows         = ___x(bytes)
                 };
             }
         }
@@ -356,4 +311,4 @@ struct Chip8ISA {
     }
 
     
-};
+}
