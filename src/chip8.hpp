@@ -34,7 +34,7 @@ struct Chip8 {
     }
 
     auto reader() {
-        return [this](uint8_t reg) {
+        return [this](uint8_t reg) -> uint8_t& {
             return cpu.reg(reg);
         };
     }
