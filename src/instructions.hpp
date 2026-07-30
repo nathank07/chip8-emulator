@@ -74,8 +74,8 @@ namespace Chip8ISA {
     };
 
     struct SetReg {
-        const Operand4_reg dst_reg;
-        const Operand4_reg src_reg;
+        const Operand4_reg dst;
+        const Operand4_reg src;
     };
 
     struct SetIndexReg {
@@ -145,6 +145,35 @@ namespace Chip8ISA {
                 return Jump{ .imm = _xxx(bytes) };
             }
 
+            case 0x2: {
+                return CallSubroutine{ .imm = _xxx(bytes) };
+            }
+
+            case 0x3: {
+                return SkipEqImm{ 
+                    .reg = _x__(bytes),
+                    .imm = __xx(bytes) 
+                };
+            }
+
+            case 0x4: {
+                return SkipNeqImm{ 
+                    .reg = _x__(bytes),
+                    .imm = __xx(bytes) 
+                };
+            }
+
+            case 0x5: {
+
+                if (___x(bytes) == 0x0)
+                    return SkipEqReg{ 
+                        .r1 = _x__(bytes),
+                        .r2 = __x_(bytes) 
+                    };
+
+                break;
+            }
+
             case 0x6: {
                 return SetImm{
                     .reg = _x__(bytes),
@@ -157,6 +186,27 @@ namespace Chip8ISA {
                     .reg = _x__(bytes),
                     .imm = __xx(bytes)
                 };
+            }
+
+            case 0x8: {
+                if (___x(bytes) == 0x0)
+                    return SetReg{
+                        .dst = _x__(bytes),
+                        .src = __x_(bytes)
+                    };
+                
+                break;
+            }
+
+            case 0x9: {
+
+                if (___x(bytes) == 0x0)
+                    return SkipNeqReg{ 
+                        .r1 = _x__(bytes),
+                        .r2 = __x_(bytes) 
+                    };
+
+                break;
             }
 
             case 0xA: {

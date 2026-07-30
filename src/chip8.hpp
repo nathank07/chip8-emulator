@@ -76,19 +76,49 @@ struct Chip8 {
             [this](const Chip8ISA::Jump& i) { 
                 cpu.program_counter = i.imm.v; 
             },
+            [this](const Chip8ISA::CallSubroutine& i) {
+                cpu.function_pointers.push(cpu.program_counter);
+                cpu.program_counter = i.imm.v;
+            },
+            [this](const Chip8ISA::ReturnSubroutine&) {
+                const auto top = cpu.function_pointers.top();
+                cpu.function_pointers.pop(); 
+                cpu.program_counter = top;
+            },
+            [this](const Chip8ISA::SkipEqImm& i) {
+                cpu.program_counter += 
+                    props.skip(cpu.reg(i.reg.r) == i.imm.v);
+            },
+            [this](const Chip8ISA::SkipNeqImm& i) {
+                cpu.program_counter += 
+                    props.skip(cpu.reg(i.reg.r) != i.imm.v);
+            },
+            [this](const Chip8ISA::SkipEqReg& i) {
+                cpu.program_counter += props.skip(
+                    cpu.reg(i.r1.r) == cpu.reg(i.r2.r)
+                );
+            },
+            [this](const Chip8ISA::SkipNeqReg& i) {
+                cpu.program_counter += props.skip(
+                    cpu.reg(i.r1.r) != cpu.reg(i.r2.r)
+                );
+            },
             [this](const Chip8ISA::SetImm& i) {
                 cpu.reg(i.reg.r) = i.imm.v;
             },
-            [this](const Chip8ISA::Add& i) {
-                cpu.reg(i.reg.r) += i.imm.v;
+            [this](const Chip8ISA::SetReg& i) {
+                cpu.reg(i.dst.r) = cpu.reg(i.src.r);
             },
             [this](const Chip8ISA::SetIndexReg& i) {
                 cpu.index_register = i.imm.v;
             },
-            [this](const Chip8ISA::Display& i) { _display(i); },
-            [](const auto&) {
-                std::cerr << "Unimplemented Instruction\n";
+            [this](const Chip8ISA::Add& i) {
+                cpu.reg(i.reg.r) += i.imm.v;
             },
+            [this](const Chip8ISA::Display& i) { _display(i); },
+            // [](const auto&) {
+            //     std::cerr << "Unimplemented Instruction\n";
+            // },
         }, instruction);
 
         cpu.program_counter += props.advance_ip_with(instruction);
