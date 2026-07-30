@@ -47,12 +47,18 @@ struct Chip8 {
                 uint8_t byte = mem[arr_idx + row];
 
                 for (uint8_t col = 0; col < 8; ++col) {
-                    auto cx = std::clamp(x + col, 0, Chip8Display::DISPLAY_WIDTH - 1);
-                    auto cy = std::clamp(y + row, 0, Chip8Display::DISPLAY_HEIGHT - 1);
+                    auto cx = x + col;
+                    auto cy = y + row;
 
+                     if (cx >= Chip8Display::DISPLAY_WIDTH 
+                     ||  cy >= Chip8Display::DISPLAY_HEIGHT) {
+                        continue;
+                     }  
+                      
                     d.with_pixel(cx, cy, [this, &vf, byte, col](Chip8Display::Color& c) {
+                        bool was_enabled = c.enabled;
                         c.enabled ^= byte >> (7 - col) & 0x1;
-                        if (c.enabled) vf = true;
+                        if (was_enabled && !c.enabled) vf = true;
                     });
 
                 }
