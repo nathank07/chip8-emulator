@@ -7,6 +7,26 @@
 
 namespace Chip8ISA {
 
+    constexpr static auto _xxx = [](uint16_t b) -> uint16_t {
+        return b & 0xFFF;
+    };
+
+    constexpr static auto __xx = [](uint16_t b) -> uint8_t {
+        return b & 0xFF;
+    };
+
+    constexpr static auto ___x = [](uint16_t b) -> uint8_t {
+        return b & 0xF;
+    };
+
+    constexpr static auto _x__ = [](uint16_t b) -> uint8_t {
+        return b >> 8 & 0xF;
+    };
+
+    constexpr static auto __x_ = [](uint16_t b) -> uint8_t {
+        return b >> 4 & 0xF;
+    };
+
     struct Operand4_reg {
         const uint8_t r;
         Operand4_reg() = delete;
@@ -42,6 +62,12 @@ namespace Chip8ISA {
         const Operand12_imm imm;
     };
 
+    struct JumpOffset {
+        const Operand12_imm long_imm;
+        Operand4_reg reg() { return _x__(long_imm.v); }
+        Operand8_imm short_imm() { return __xx(long_imm.v); }
+    };
+
     struct CallSubroutine {
         const Operand12_imm imm;
     };
@@ -69,8 +95,8 @@ namespace Chip8ISA {
     };
 
     struct SetImm {
-        const Operand4_reg reg;
-        const Operand8_imm imm; 
+        const Operand4_reg dst;
+        const Operand8_imm src; 
     };
 
     struct SetReg {
@@ -82,15 +108,94 @@ namespace Chip8ISA {
         const Operand12_imm imm;
     };
 
+    struct AddIndexReg {
+        const Operand4_reg src;
+    };
+
     struct Add {
-        const Operand4_reg reg;
-        const Operand8_imm imm;
+        const Operand4_reg dst;
+        const Operand8_imm src;
+    };
+
+    struct Sub {
+        const Operand4_reg dst;
+        const Operand8_imm src;
+    };
+
+    struct BitwiseOr {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct BitwiseAnd {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct BitwiseXor {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct ShiftLeft {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct ShiftRight {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct Random {
+        const Operand4_reg dst;
+        const Operand8_imm bitwise_and_with;
     };
 
     struct Display {
         const Operand4_reg x_coordinate;
         const Operand4_reg y_coordinate;
         const Operand4_imm rows;
+    };
+
+    struct SkipIfKeyPressed {
+        const Operand4_reg key;
+    };
+
+    struct SkipIfKeyNotPressed {
+        const Operand4_reg key;
+    };
+
+    struct SetRegWithTimer {
+        const Operand4_reg dst; 
+    };
+
+    struct SetDelayTimer {
+        const Operand4_reg dst;
+    };
+
+    struct SetSoundTimer {
+        const Operand4_reg dst;
+    };
+
+    struct GetKey {
+        const Operand4_reg dst;
+    };
+
+    struct SetIndexToFontAddr {
+        const Operand4_reg font;
+    };
+
+    struct ConvertDecimalIntoIndexBuff {
+        const Operand4_reg src;
+    };
+
+    struct LoadMemory {
+        const Operand4_reg src;
+    };
+
+    struct StoreMemory {
+        const Operand4_reg src;
     };
 
     using Instruction = std::variant<
@@ -109,33 +214,13 @@ namespace Chip8ISA {
         
         uint8_t opcode = bytes >> 12;
 
-        constexpr static auto _xxx = [](uint16_t b) -> uint16_t {
-            return b & 0xFFF;
-        };
-
-        constexpr static auto __xx = [](uint16_t b) -> uint8_t {
-            return b & 0xFF;
-        };
-
-        constexpr static auto ___x = [](uint16_t b) -> uint8_t {
-            return b & 0xF;
-        };
-
-        constexpr static auto _x__ = [](uint16_t b) -> uint8_t {
-            return b >> 8 & 0xF;
-        };
-
-        constexpr static auto __x_ = [](uint16_t b) -> uint8_t {
-            return b >> 4 & 0xF;
-        };
-
         switch (opcode) {
 
             case 0x0: {
-                if ((bytes & 0xFFF) == 0x0E0) 
+                if (_xxx(bytes) == 0x0E0) 
                     return Clear{};
                 
-                if ((bytes & 0xFFF) == 0x0EE)
+                if (_xxx(bytes) == 0x0EE)
                     return ReturnSubroutine{};
 
                 break;
@@ -176,15 +261,15 @@ namespace Chip8ISA {
 
             case 0x6: {
                 return SetImm{
-                    .reg = _x__(bytes),
-                    .imm = __xx(bytes)
+                    .dst = _x__(bytes),
+                    .src = __xx(bytes)
                 };
             }
 
             case 0x7: {
                 return Add{
-                    .reg = _x__(bytes),
-                    .imm = __xx(bytes)
+                    .dst = _x__(bytes),
+                    .src = __xx(bytes)
                 };
             }
 
@@ -217,7 +302,7 @@ namespace Chip8ISA {
                 return Display{
                     .x_coordinate = _x__(bytes),
                     .y_coordinate = __x_(bytes),
-                    .rows = ___x(bytes)
+                    .rows         = ___x(bytes)
                 };
             }
         }

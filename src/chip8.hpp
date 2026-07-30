@@ -104,7 +104,7 @@ struct Chip8 {
                 );
             },
             [this](const Chip8ISA::SetImm& i) {
-                cpu.reg(i.reg.r) = i.imm.v;
+                cpu.reg(i.dst.r) = i.src.v;
             },
             [this](const Chip8ISA::SetReg& i) {
                 cpu.reg(i.dst.r) = cpu.reg(i.src.r);
@@ -113,7 +113,7 @@ struct Chip8 {
                 cpu.index_register = i.imm.v;
             },
             [this](const Chip8ISA::Add& i) {
-                cpu.reg(i.reg.r) += i.imm.v;
+                cpu.reg(i.dst.r) += i.src.v;
             },
             [this](const Chip8ISA::Display& i) { _display(i); },
             // [](const auto&) {
