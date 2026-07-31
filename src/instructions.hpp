@@ -324,7 +324,7 @@ namespace Chip8ISA {
                         };
 
                     case 0x3:
-                        return BitwiseAnd{
+                        return BitwiseXor{
                             .dst = _x__(bytes),
                             .src = __x_(bytes)
                         };

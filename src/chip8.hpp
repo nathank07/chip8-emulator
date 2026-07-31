@@ -173,6 +173,15 @@ struct Chip8 {
                 byte >>= 1;
                 r(0xF) = vf;
             },
+            [this, r](const Chip8ISA::BitwiseOr& i) {
+                i.dst.v(r) |= i.src.v(r);
+            },
+            [this, r](const Chip8ISA::BitwiseAnd& i) {
+                i.dst.v(r) &= i.src.v(r);
+            },
+            [this, r](const Chip8ISA::BitwiseXor& i) {
+                i.dst.v(r) ^= i.src.v(r);
+            },
             [this, r](const Chip8ISA::Random& i) {
                 i.dst.v(r) = random_number() & i.bitwise_and_with.v; 
             },
@@ -191,9 +200,9 @@ struct Chip8 {
             [this, r](const Chip8ISA::ConvertDecimalIntoIndexBuff& i) {
                 uint8_t byte = i.src.v(r);
                 uint16_t idx = cpu.index_register;
-                mem[idx] = byte % 10; byte /= 10;
+                mem[idx + 2] = byte % 10; byte /= 10;
                 mem[idx + 1] = byte % 10; byte /= 10;
-                mem[idx + 2] = byte % 10;
+                mem[idx] = byte % 10;
             },
             [this, r](const Chip8ISA::StoreMemory& i) {
                 const uint8_t literal_r = i.dst.copy(std::identity{});
