@@ -36,6 +36,10 @@ namespace Chip8ISA {
         uint8_t& v(F&& reader) const {
             return reader(reg);
         }
+        template <typename F>
+        uint8_t copy(F&& reader) const {
+            return reader(reg);
+        }
         private:
         const uint8_t reg;
     };

@@ -85,7 +85,6 @@ struct Chip8 {
     void execute(Instruction instruction) {
 
         const auto r = reader();
-        const auto id = [](uint8_t& r) -> uint8_t { return r; }; 
 
         std::visit(overloads{
             [this](const Chip8ISA::Clear&) { 
@@ -146,9 +145,8 @@ struct Chip8 {
                 r(0xF) = static_cast<uint8_t>(total > 255);
             },
             [this, r](const Chip8ISA::AddIndexReg& i) {
-                uint16_t total = cpu.index_register + i.src.v(r);
-                cpu.index_register = total;
-                if (props.add_index_sets_vf && total > cpu.index_register) 
+                cpu.index_register = cpu.index_register + i.src.v(r);
+                if (props.add_index_sets_vf && cpu.index_register > 0x0FFF) 
                     r(0xF) = 0x1;
             },
             [this, r](const Chip8ISA::SubRegDstLhs& i) {
@@ -197,8 +195,8 @@ struct Chip8 {
                 mem[idx + 1] = byte % 10; byte /= 10;
                 mem[idx + 2] = byte % 10;
             },
-            [this, r, id](const Chip8ISA::StoreMemory& i) {
-                const uint8_t literal_r = i.dst.v(id);
+            [this, r](const Chip8ISA::StoreMemory& i) {
+                const uint8_t literal_r = i.dst.copy(std::identity{});
                 const uint16_t idx = cpu.index_register;
 
                 for (uint8_t i = 0; i <= literal_r; ++i) 
@@ -206,8 +204,8 @@ struct Chip8 {
                 
                 cpu.index_register = props.set_store_load_idx(idx, literal_r);
             },
-            [this, r, id](const Chip8ISA::LoadMemory& i) {
-                const uint8_t literal_r = i.src.v(id);
+            [this, r](const Chip8ISA::LoadMemory& i) {
+                const uint8_t literal_r = i.src.copy(std::identity{});
                 const uint16_t idx = cpu.index_register;
 
                 for (uint8_t i = 0; i <= literal_r; ++i) 
