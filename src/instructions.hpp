@@ -117,14 +117,29 @@ namespace Chip8ISA {
         const Operand4_reg src;
     };
 
-    struct Add {
+    struct AddImm {
         const Operand4_reg dst;
         const Operand8_imm src;
+    };
+
+    struct AddReg {
+        const Operand4_reg dst;
+        const Operand4_reg src;
     };
 
     struct Sub {
         const Operand4_reg dst;
         const Operand8_imm src;
+    };
+
+    struct SubRegDstLhs {
+        const Operand4_reg dst;
+        const Operand4_reg src;
+    };
+
+    struct SubRegSrcLhs {
+        const Operand4_reg dst;
+        const Operand4_reg src;
     };
 
     struct BitwiseOr {
@@ -204,8 +219,12 @@ namespace Chip8ISA {
     };
 
     using Instruction = std::variant<
-        Clear, Jump, CallSubroutine, ReturnSubroutine, SkipEqImm, SkipNeqImm,
-        SkipEqReg, SkipNeqReg, SetImm, SetReg, SetIndexReg, Add, Display
+        Clear, Jump, JumpOffset, CallSubroutine, ReturnSubroutine, SkipEqImm, 
+        SkipNeqImm, SkipEqReg, SkipNeqReg, SetImm, SetReg, SetIndexReg, AddImm, 
+        AddReg, Display, BitwiseAnd, BitwiseOr, BitwiseXor, Sub, SubRegDstLhs, 
+        SubRegSrcLhs, ShiftRight, ShiftLeft, Random, SkipIfKeyPressed, SkipIfKeyNotPressed,
+        SetRegWithTimer, SetDelayTimer, SetSoundTimer, AddIndexReg, GetKey, SetIndexToFontAddr,
+        ConvertDecimalIntoIndexBuff, LoadMemory, StoreMemory
     >;
 
    
@@ -272,19 +291,73 @@ namespace Chip8ISA {
             }
 
             case 0x7: {
-                return Add{
+                return AddImm{
                     .dst = _x__(bytes),
                     .src = __xx(bytes)
                 };
             }
 
             case 0x8: {
-                if (___x(bytes) == 0x0)
-                    return SetReg{
-                        .dst = _x__(bytes),
-                        .src = __x_(bytes)
-                    };
-                
+
+                switch (___x(bytes)) {
+
+                    case 0x0: 
+                        return SetReg{
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x1:
+                        return BitwiseOr{
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x2:
+                        return BitwiseAnd{
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x3:
+                        return BitwiseAnd{
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x4:
+                        return AddReg{
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x5:
+                        return SubRegDstLhs {
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x6:
+                        return ShiftRight {
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0x7:
+                        return SubRegSrcLhs {
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+
+                    case 0xE:
+                        return ShiftLeft {
+                            .dst = _x__(bytes),
+                            .src = __x_(bytes)
+                        };
+                    
+                    break;
+                }
+
                 break;
             }
 
@@ -303,6 +376,17 @@ namespace Chip8ISA {
                 return SetIndexReg{ .imm = _xxx(bytes) };
             }
 
+            case 0xB: {
+                return JumpOffset { .long_imm = _xxx(bytes) };
+            }
+
+            case 0xC: {
+                return Random { 
+                    .dst =              _x__(bytes),
+                    .bitwise_and_with = __xx(bytes)
+                };
+            }
+
             case 0xD: {
                 return Display{
                     .x_coordinate = _x__(bytes),
@@ -310,10 +394,85 @@ namespace Chip8ISA {
                     .rows         = ___x(bytes)
                 };
             }
+
+            case 0xE: {
+
+                switch (__xx(bytes)) {
+
+                    case 0x9E:
+                        return SkipIfKeyPressed {
+                            .key = _x__(bytes)
+                        };
+
+                    case 0xA1:
+                        return SkipIfKeyNotPressed {
+                            .key = _x__(bytes)
+                        };
+
+                    break;
+                }
+                
+                break;
+            }
+
+            case 0xF: {
+
+                switch (__xx(bytes)) {
+
+                    case 0x07:
+                        return SetRegWithTimer {
+                            .dst = _x__(bytes)
+                        };
+
+                    case 0x15:
+                        return SetDelayTimer {
+                            .dst = _x__(bytes)
+                        };
+                    
+                    case 0x18:
+                        return SetSoundTimer {
+                            .dst = _x__(bytes)
+                        };
+
+                    case 0x1E: 
+                        return AddIndexReg { 
+                            .src = _x__(bytes) 
+                        };
+
+                    case 0x0A:
+                        return GetKey {
+                            .dst = _x__(bytes)
+                        };
+
+                    case 0x29:
+                        return SetIndexToFontAddr {
+                            .font = _x__(bytes)
+                        };
+
+                    case 0x33:
+                        return ConvertDecimalIntoIndexBuff {
+                            .src = _x__(bytes)
+                        };
+
+                    case 0x55:
+                        return StoreMemory {
+                            .src = _x__(bytes)
+                        };
+
+                    case 0x65:
+                        return LoadMemory {
+                            .src = _x__(bytes)
+                        };
+
+                    break;
+                    
+                }
+
+                break;
+            }
         }
 
         return std::unexpected<UnimplementedInstruction>{bytes};
     }
 
-    
 }
