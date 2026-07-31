@@ -83,9 +83,36 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
-    if (event->type == SDL_EVENT_KEY_DOWN ||
-        event->type == SDL_EVENT_QUIT) {
+    if (event->type == SDL_EVENT_QUIT) {
         return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+    }
+
+    if (event->type == SDL_EVENT_KEY_DOWN || event->type == SDL_EVENT_KEY_UP) {
+        const auto action = [event](uint8_t key) {
+            event->type == SDL_EVENT_KEY_DOWN ?
+                c8.keyboard.keydown_event(key) :
+                c8.keyboard.keyup_event(key);
+        };
+
+        switch (event->key.scancode) {
+            case SDL_Scancode::SDL_SCANCODE_1: { action(0x1); break; }
+            case SDL_Scancode::SDL_SCANCODE_2: { action(0x2); break; }
+            case SDL_Scancode::SDL_SCANCODE_3: { action(0x3); break; }
+            case SDL_Scancode::SDL_SCANCODE_4: { action(0xC); break; }
+            case SDL_Scancode::SDL_SCANCODE_Q: { action(0x4); break; }
+            case SDL_Scancode::SDL_SCANCODE_W: { action(0x5); break; }
+            case SDL_Scancode::SDL_SCANCODE_E: { action(0x6); break; }
+            case SDL_Scancode::SDL_SCANCODE_R: { action(0xD); break; }
+            case SDL_Scancode::SDL_SCANCODE_A: { action(0x7); break; }
+            case SDL_Scancode::SDL_SCANCODE_S: { action(0x8); break; }
+            case SDL_Scancode::SDL_SCANCODE_D: { action(0x9); break; }
+            case SDL_Scancode::SDL_SCANCODE_F: { action(0xE); break; }
+            case SDL_Scancode::SDL_SCANCODE_Z: { action(0xA); break; }
+            case SDL_Scancode::SDL_SCANCODE_X: { action(0x0); break; }
+            case SDL_Scancode::SDL_SCANCODE_C: { action(0xB); break; }
+            case SDL_Scancode::SDL_SCANCODE_V: { action(0xF); break; }
+            default: break;
+        }
     }
     return SDL_APP_CONTINUE;
 }
@@ -93,10 +120,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    c8.run();
+    auto ok = c8.run();
+    if (!ok) {
+        SDL_Log("Program crashed because an unimplemented instruction: %04X\n", ok.error().bytes);
+        return SDL_APP_FAILURE;
+    }
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+    SDL_Delay(1);
     return SDL_APP_CONTINUE;
 }
 

@@ -9,6 +9,8 @@
 #include <cstring>
 #include <expected>
 #include <random>
+#include <ranges>
+#include "chip8keyboard.hpp"
 
 struct Chip8 {
 
@@ -18,6 +20,7 @@ struct Chip8 {
     CPU cpu;
     Memory mem;
     Chip8Properties props;
+    Chip8Keyboard keyboard;
 
     template <typename T>
     bool load_rom(T arr) {
@@ -222,6 +225,22 @@ struct Chip8 {
                 
                 cpu.index_register = props.set_store_load_idx(idx, literal_r);
             },
+            [this, r](const Chip8ISA::SkipIfKeyPressed& i) {
+                cpu.program_counter += keyboard.get_key(i.key.v(r)) ? 2 : 0;
+            },
+            [this, r](const Chip8ISA::SkipIfKeyNotPressed& i) {
+                cpu.program_counter += !keyboard.get_key(i.key.v(r)) ? 2 : 0;
+            },
+            [this, r](const Chip8ISA::GetKey& i) {
+                auto is_up = [this](int key) { return keyboard.recent_keyup(key); };
+                auto keys = std::views::iota(0x0, 0x10);
+                auto it = std::ranges::find_if(keys, is_up);
+
+                if (it != keys.end()) {
+                    cpu.program_counter += 2;
+                    i.dst.v(r) = *it;
+                }
+            },
             [this](const Chip8ISA::Display& i) { _display(i); },
             [](const auto&) {
                 std::cerr << "Unimplemented Instruction\n";
@@ -229,5 +248,6 @@ struct Chip8 {
         }, instruction);
 
         cpu.program_counter += props.advance_ip_with(instruction);
+        keyboard.update_keyup_events();
     }
 };

@@ -34,6 +34,7 @@ struct Chip8Properties {
             [&](const Chip8ISA::ReturnSubroutine&) { return 0; },
             [&](const Chip8ISA::CallSubroutine&) { return 0; },
             [&](const Chip8ISA::JumpOffset&) { return 0; },
+            [&](const Chip8ISA::GetKey&) { return 0; },
             [&](const Chip8ISA::Jump&) { return 0; },
             [&](const auto&)           { return 2; },
         }, instruction);
