@@ -8,6 +8,7 @@
 #include "utils.hpp"
 #include <cstring>
 #include <expected>
+#include <random>
 
 struct Chip8 {
 
@@ -74,9 +75,17 @@ struct Chip8 {
         });
     }
 
+    uint8_t random_number() {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_int_distribution<uint8_t> distrib(0, 255);
+        return distrib(gen);
+    }
+
     void execute(Instruction instruction) {
 
-        const auto r = reader(); 
+        const auto r = reader();
+        const auto id = [](uint8_t& r) -> uint8_t { return r; }; 
 
         std::visit(overloads{
             [this](const Chip8ISA::Clear&) { 
@@ -84,6 +93,11 @@ struct Chip8 {
             },
             [this](const Chip8ISA::Jump& i) { 
                 cpu.program_counter = i.imm.v; 
+            },
+            [this, r](const Chip8ISA::JumpOffset& i) {
+                cpu.program_counter = props.jump_offset_uses_reg ?
+                    i.reg().v(r) + i.short_imm().v :
+                    i.long_imm.v;
             },
             [this](const Chip8ISA::CallSubroutine& i) {
                 cpu.function_pointers.push(cpu.program_counter + 2);
@@ -125,6 +139,81 @@ struct Chip8 {
             },
             [this, r](const Chip8ISA::AddImm& i) {
                 i.dst.v(r) += i.src.v;
+            },
+            [this, r](const Chip8ISA::AddReg& i) {
+                uint16_t total = i.dst.v(r) + i.src.v(r);
+                i.dst.v(r) = static_cast<uint8_t>(total);
+                r(0xF) = static_cast<uint8_t>(total > 255);
+            },
+            [this, r](const Chip8ISA::AddIndexReg& i) {
+                uint16_t total = cpu.index_register + i.src.v(r);
+                cpu.index_register = total;
+                if (props.add_index_sets_vf && total > cpu.index_register) 
+                    r(0xF) = 0x1;
+            },
+            [this, r](const Chip8ISA::SubRegDstLhs& i) {
+                uint8_t vf = i.dst.v(r) >= i.src.v(r);
+                i.dst.v(r) = i.dst.v(r) - i.src.v(r);
+                r(0xF) = vf;
+            },
+            [this, r](const Chip8ISA::SubRegSrcLhs& i) {
+                uint8_t vf = i.dst.v(r) <= i.src.v(r);
+                i.dst.v(r) = i.src.v(r) - i.dst.v(r);
+                r(0xF) = vf;
+            },
+            [this, r](const Chip8ISA::ShiftLeft& i) {
+                uint8_t& byte = i.dst.v(r);
+                byte = props.set_shift(byte, i.src.v(r));
+                uint8_t vf = byte >> 7;
+                byte <<= 1;
+                r(0xF) = vf;
+            },
+            [this, r](const Chip8ISA::ShiftRight& i) {
+                uint8_t& byte = i.dst.v(r);
+                byte = props.set_shift(byte, i.src.v(r));
+                uint8_t vf = byte & 0x1;
+                byte >>= 1;
+                r(0xF) = vf;
+            },
+            [this, r](const Chip8ISA::Random& i) {
+                i.dst.v(r) = random_number() & i.bitwise_and_with.v; 
+            },
+            [this, r](const Chip8ISA::SetRegWithTimer& i) {
+                i.dst.v(r) = cpu.delay_timer;
+            },
+            [this, r](const Chip8ISA::SetDelayTimer& i) {
+                cpu.delay_timer = i.dst.v(r);
+            },
+            [this, r](const Chip8ISA::SetSoundTimer& i) {
+                cpu.sound_timer = i.dst.v(r);
+            },
+            [this, r](const Chip8ISA::SetIndexToFontAddr& i) {
+                cpu.index_register = i.src.v(r) * 5;
+            },
+            [this, r](const Chip8ISA::ConvertDecimalIntoIndexBuff& i) {
+                uint8_t byte = i.src.v(r);
+                uint16_t idx = cpu.index_register;
+                mem[idx] = byte % 10; byte /= 10;
+                mem[idx + 1] = byte % 10; byte /= 10;
+                mem[idx + 2] = byte % 10;
+            },
+            [this, r, id](const Chip8ISA::StoreMemory& i) {
+                const uint8_t literal_r = i.dst.v(id);
+                const uint16_t idx = cpu.index_register;
+
+                for (uint8_t i = 0; i <= literal_r; ++i) 
+                    mem[i + idx] = r(i); 
+                
+                cpu.index_register = props.set_store_load_idx(idx, literal_r);
+            },
+            [this, r, id](const Chip8ISA::LoadMemory& i) {
+                const uint8_t literal_r = i.src.v(id);
+                const uint16_t idx = cpu.index_register;
+
+                for (uint8_t i = 0; i <= literal_r; ++i) 
+                    r(i) = mem[i + idx]; 
+                
+                cpu.index_register = props.set_store_load_idx(idx, literal_r);
             },
             [this](const Chip8ISA::Display& i) { _display(i); },
             [](const auto&) {

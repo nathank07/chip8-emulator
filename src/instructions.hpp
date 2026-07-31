@@ -69,8 +69,8 @@ namespace Chip8ISA {
 
     struct JumpOffset {
         const Operand12_imm long_imm;
-        Operand4_reg reg() { return _x__(long_imm.v); }
-        Operand8_imm short_imm() { return __xx(long_imm.v); }
+        Operand4_reg reg() const { return _x__(long_imm.v); }
+        Operand8_imm short_imm() const { return __xx(long_imm.v); }
     };
 
     struct CallSubroutine {
@@ -203,7 +203,7 @@ namespace Chip8ISA {
     };
 
     struct SetIndexToFontAddr {
-        const Operand4_reg font;
+        const Operand4_reg src;
     };
 
     struct ConvertDecimalIntoIndexBuff {
@@ -215,7 +215,7 @@ namespace Chip8ISA {
     };
 
     struct StoreMemory {
-        const Operand4_reg src;
+        const Operand4_reg dst;
     };
 
     using Instruction = std::variant<
@@ -446,7 +446,7 @@ namespace Chip8ISA {
 
                     case 0x29:
                         return SetIndexToFontAddr {
-                            .font = _x__(bytes)
+                            .src = _x__(bytes)
                         };
 
                     case 0x33:
@@ -456,7 +456,7 @@ namespace Chip8ISA {
 
                     case 0x55:
                         return StoreMemory {
-                            .src = _x__(bytes)
+                            .dst = _x__(bytes)
                         };
 
                     case 0x65:
