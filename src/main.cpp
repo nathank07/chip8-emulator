@@ -138,7 +138,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     while (ticks_ns >= ticks_ps) {
         c8.cpu.sound_timer = std::max(0, c8.cpu.sound_timer - 1);    
         c8.cpu.delay_timer = std::max(0, c8.cpu.delay_timer - 1);
-        for (uint16_t i = 0; i < c8.props.instructions_per_second; ++i) {
+        for (uint16_t i = 0; i < c8.props.instructions_per_tick(); ++i) {
             auto ok = c8.run();
 
             if (!ok) {

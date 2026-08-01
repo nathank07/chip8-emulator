@@ -19,8 +19,8 @@ struct Chip8Properties {
     bool bitwise_operations_reset_vf = true;
     bool display_wait = true;
 
-    uint64_t instructions_per_second_ns() {
-        return 1'000'000'000ULL / instructions_per_second;
+    uint64_t instructions_per_tick() {
+        return instructions_per_second / ticks_per_second;
     }
 
     uint64_t ticks_per_second_ns() {
