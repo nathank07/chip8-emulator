@@ -156,7 +156,6 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
-    SDL_Delay(1);
     return SDL_APP_CONTINUE;
 }
 

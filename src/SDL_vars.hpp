@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <iostream>
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
