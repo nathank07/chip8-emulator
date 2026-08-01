@@ -131,11 +131,6 @@ namespace Chip8ISA {
         const Operand4_reg src;
     };
 
-    struct Sub {
-        const Operand4_reg dst;
-        const Operand8_imm src;
-    };
-
     struct SubRegDstLhs {
         const Operand4_reg dst;
         const Operand4_reg src;
@@ -225,7 +220,7 @@ namespace Chip8ISA {
     using Instruction = std::variant<
         Clear, Jump, JumpOffset, CallSubroutine, ReturnSubroutine, SkipEqImm, 
         SkipNeqImm, SkipEqReg, SkipNeqReg, SetImm, SetReg, SetIndexReg, AddImm, 
-        AddReg, Display, BitwiseAnd, BitwiseOr, BitwiseXor, Sub, SubRegDstLhs, 
+        AddReg, Display, BitwiseAnd, BitwiseOr, BitwiseXor, SubRegDstLhs, 
         SubRegSrcLhs, ShiftRight, ShiftLeft, Random, SkipIfKeyPressed, SkipIfKeyNotPressed,
         SetRegWithTimer, SetDelayTimer, SetSoundTimer, AddIndexReg, GetKey, SetIndexToFontAddr,
         ConvertDecimalIntoIndexBuff, LoadMemory, StoreMemory

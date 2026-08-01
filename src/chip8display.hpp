@@ -59,8 +59,4 @@ struct Chip8Display {
         draw_canvas(DISPLAY_WIDTH, DISPLAY_HEIGHT, canvas, palette);
     };
 
-    constexpr static auto debug_pixel_draw = 
-        [](uint8_t w, uint8_t h, Color c) {
-            debug_pixel(w, h, c);
-        };
 };

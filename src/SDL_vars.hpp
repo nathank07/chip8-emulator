@@ -18,15 +18,9 @@ const static int SDL_HEIGHT = 32;
 enum HexColor : uint32_t {
     HEX_COLOR_WHITE = 0xFFFFFFFF,
     HEX_COLOR_BLACK = 0x000000FF,
+    HEX_COLOR_LIGHT_PINK = 0xFFC8DDFF,
+    HEX_COLOR_DARK_PINK = 0xFB6F92FF
 };
-
-template <typename T, typename Derived>
-void debug_pixel(T w, T h, const Derived& color) {
-    auto c = color.color();
-    std::cout << "(" 
-        << static_cast<int>(w) << ", " << static_cast<int>(h) << "): Palette enum #"
-        << std::hex << static_cast<uint32_t>(c) << std::dec << "\n";
-}
 
 template <typename T, typename DerivedArr, typename P>
 void draw_canvas(T full_w, T full_h, const DerivedArr& arr, const P& color_encoder) {

@@ -76,8 +76,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
     SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
     c8.display.with_palette([](Chip8Palette& p){
-        p.background = 0xffc8ddff;
-        p.foreground = 0xfb6f92ff;
+        p.background = HEX_COLOR_LIGHT_PINK;
+        p.foreground = HEX_COLOR_DARK_PINK;
     });
 
     return SDL_APP_CONTINUE;

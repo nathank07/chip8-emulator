@@ -245,9 +245,6 @@ struct Chip8 {
                 }
             },
             [this](const Chip8ISA::Display& i) { _display(i); },
-            [](const auto&) {
-                std::cerr << "Unimplemented Instruction\n";
-            },
         }, instruction);
 
         cpu.program_counter += props.advance_ip_with(instruction);

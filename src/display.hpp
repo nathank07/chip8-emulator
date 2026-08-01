@@ -22,11 +22,6 @@ struct Display {
         T::render(display_values, palette);
     }
 
-    void draw_pixel(uint8_t x, uint8_t y, Color value) {
-        at(x, y) = value;
-        T::debug_pixel_draw(x, y, value);
-    }
-
     template <typename F>
     auto with_pixel(uint8_t x, uint8_t y, F&& do_with_pixel) {
         return do_with_pixel(at(x, y));
