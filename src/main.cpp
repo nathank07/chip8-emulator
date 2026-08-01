@@ -141,6 +141,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         auto ok = c8.run();
         if (!ok) {
             SDL_Log("Program crashed because an unimplemented instruction: %04X\n", ok.error().bytes);
+            SDL_Delay(5000);
             return SDL_APP_FAILURE;
         }
         instruction_timer_ns -= instr_ps;

@@ -99,7 +99,7 @@ struct Chip8 {
             [this, r](const Chip8ISA::JumpOffset& i) {
                 cpu.program_counter = props.jump_offset_uses_reg ?
                     i.reg().v(r) + i.short_imm().v :
-                    i.long_imm.v;
+                    r(0x0) + i.long_imm.v;
             },
             [this](const Chip8ISA::CallSubroutine& i) {
                 cpu.function_pointers.push(cpu.program_counter + 2);
@@ -177,12 +177,15 @@ struct Chip8 {
                 r(0xF) = vf;
             },
             [this, r](const Chip8ISA::BitwiseOr& i) {
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) |= i.src.v(r);
             },
             [this, r](const Chip8ISA::BitwiseAnd& i) {
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) &= i.src.v(r);
             },
             [this, r](const Chip8ISA::BitwiseXor& i) {
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) ^= i.src.v(r);
             },
             [this, r](const Chip8ISA::Random& i) {
@@ -208,19 +211,19 @@ struct Chip8 {
                 mem[idx] = byte % 10;
             },
             [this, r](const Chip8ISA::StoreMemory& i) {
-                const uint8_t literal_r = i.dst.copy(std::identity{});
+                const uint8_t literal_r = i.dst.copy(std::identity{}) + 1;
                 const uint16_t idx = cpu.index_register;
 
-                for (uint8_t i = 0; i <= literal_r; ++i) 
+                for (uint8_t i = 0; i < literal_r; ++i) 
                     mem[i + idx] = r(i); 
                 
                 cpu.index_register = props.set_store_load_idx(idx, literal_r);
             },
             [this, r](const Chip8ISA::LoadMemory& i) {
-                const uint8_t literal_r = i.src.copy(std::identity{});
+                const uint8_t literal_r = i.src.copy(std::identity{}) + 1;
                 const uint16_t idx = cpu.index_register;
 
-                for (uint8_t i = 0; i <= literal_r; ++i) 
+                for (uint8_t i = 0; i < literal_r; ++i) 
                     r(i) = mem[i + idx]; 
                 
                 cpu.index_register = props.set_store_load_idx(idx, literal_r);

@@ -15,7 +15,8 @@ struct Chip8Properties {
     bool jump_offset_uses_reg = false;
     bool add_index_sets_vf = true;
     bool shift_sets_vf = false;
-    bool store_load_increments_idx = false;
+    bool store_load_increments_idx = true;
+    bool bitwise_operations_reset_vf = true;
 
     uint64_t instructions_per_second_ns() {
         return 1'000'000'000ULL / instructions_per_second;
@@ -29,10 +30,14 @@ struct Chip8Properties {
         return shift_sets_vf ? dst : src;
     }
 
-    uint16_t set_store_load_idx(uint16_t init_size, uint8_t size) {
+    uint16_t set_store_load_idx(uint16_t index_register, uint8_t size) {
         return store_load_increments_idx ? 
-            init_size + size :
-            size;
+            index_register + size :
+            index_register;
+    }
+
+    uint8_t set_vf_after_bitwise(uint8_t current) {
+        return bitwise_operations_reset_vf ? 0x0 : current;
     }
 
     uint16_t skip(bool on_cond) {
