@@ -177,16 +177,16 @@ struct Chip8 {
                 r(0xF) = vf;
             },
             [this, r](const Chip8ISA::BitwiseOr& i) {
-                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) |= i.src.v(r);
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
             },
             [this, r](const Chip8ISA::BitwiseAnd& i) {
-                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) &= i.src.v(r);
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
             },
             [this, r](const Chip8ISA::BitwiseXor& i) {
-                r(0xF) = props.set_vf_after_bitwise(r(0xF));
                 i.dst.v(r) ^= i.src.v(r);
+                r(0xF) = props.set_vf_after_bitwise(r(0xF));
             },
             [this, r](const Chip8ISA::Random& i) {
                 i.dst.v(r) = random_number() & i.bitwise_and_with.v; 
