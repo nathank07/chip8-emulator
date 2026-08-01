@@ -9,7 +9,7 @@ struct Chip8Properties {
 
     using Instruction = Chip8ISA::Instruction; 
 
-    uint16_t instructions_per_second = 700;
+    uint16_t instructions_per_second = 800;
     uint16_t ticks_per_second = 60;
 
     bool jump_offset_uses_reg = false;
@@ -17,6 +17,7 @@ struct Chip8Properties {
     bool shift_sets_vf = false;
     bool store_load_increments_idx = true;
     bool bitwise_operations_reset_vf = true;
+    bool display_wait = true;
 
     uint64_t instructions_per_second_ns() {
         return 1'000'000'000ULL / instructions_per_second;

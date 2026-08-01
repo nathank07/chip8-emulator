@@ -22,6 +22,11 @@ struct Chip8 {
     Chip8Properties props;
     Chip8Keyboard keyboard;
 
+    enum class ExecutionUnit {
+        Continue,
+        Break
+    };
+
     template <typename T>
     bool load_rom(T arr) {
         if (arr.size() > 0xFFF - 0x200 + 1)
@@ -32,9 +37,9 @@ struct Chip8 {
         return true;
     }
 
-    std::expected<void, Chip8ISA::InstructionError> run() {
+    std::expected<ExecutionUnit, Chip8ISA::InstructionError> run() {
         return Chip8ISA::decode(mem.fetch(cpu.program_counter))
-            .transform([this](const Instruction& i) { execute(i); });
+            .transform([this](const Instruction& i) { return execute(i); });
     }
 
     auto reader() {
@@ -85,9 +90,10 @@ struct Chip8 {
         return distrib(gen);
     }
 
-    void execute(Instruction instruction) {
+    ExecutionUnit execute(Instruction instruction) {
 
         const auto r = reader();
+        auto rv = ExecutionUnit::Continue;
 
         std::visit(overloads{
             [this](const Chip8ISA::Clear&) { 
@@ -244,10 +250,15 @@ struct Chip8 {
                     i.dst.v(r) = *it;
                 }
             },
-            [this](const Chip8ISA::Display& i) { _display(i); },
+            [this, &rv](const Chip8ISA::Display& i) { 
+                _display(i);
+                if (props.display_wait)
+                    rv = ExecutionUnit::Break;
+            },
         }, instruction);
 
         cpu.program_counter += props.advance_ip_with(instruction);
         keyboard.update_keyup_events();
+        return rv;
     }
 };
