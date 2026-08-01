@@ -21,6 +21,9 @@
 #include "instructions.hpp"
 
 static Chip8 c8;
+static uint64_t prev_ns;
+static uint64_t instruction_timer_ns;
+static uint64_t ticks_ns;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -120,11 +123,35 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate)
 {
-    auto ok = c8.run();
-    if (!ok) {
-        SDL_Log("Program crashed because an unimplemented instruction: %04X\n", ok.error().bytes);
-        return SDL_APP_FAILURE;
+    const uint64_t instr_ps = c8.props.instructions_per_second_ns();
+    const uint64_t ticks_ps = c8.props.ticks_per_second_ns();
+
+    uint64_t current_ns = SDL_GetTicksNS();
+
+    if (prev_ns == 0)
+        prev_ns = current_ns;
+
+    uint64_t elapsed_ns = current_ns - prev_ns;
+    prev_ns = current_ns;
+    
+    instruction_timer_ns += elapsed_ns;
+    ticks_ns += elapsed_ns;
+
+    while (instruction_timer_ns >= instr_ps) {
+        auto ok = c8.run();
+        if (!ok) {
+            SDL_Log("Program crashed because an unimplemented instruction: %04X\n", ok.error().bytes);
+            return SDL_APP_FAILURE;
+        }
+        instruction_timer_ns -= instr_ps;
     }
+
+    while (ticks_ns >= ticks_ps) {
+        c8.cpu.sound_timer = std::max(0, c8.cpu.sound_timer - 1);    
+        c8.cpu.delay_timer = std::max(0, c8.cpu.delay_timer - 1);
+        ticks_ns -= ticks_ps;
+    }
+    
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);

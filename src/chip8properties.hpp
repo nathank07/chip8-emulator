@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 #include "utils.hpp"
 #include "instructions.hpp"
@@ -8,10 +9,21 @@ struct Chip8Properties {
 
     using Instruction = Chip8ISA::Instruction; 
 
-    bool shift_sets_vf = false;
+    uint16_t instructions_per_second = 700;
+    uint16_t ticks_per_second = 60;
+
     bool jump_offset_uses_reg = false;
     bool add_index_sets_vf = true;
+    bool shift_sets_vf = false;
     bool store_load_increments_idx = false;
+
+    uint64_t instructions_per_second_ns() {
+        return 1'000'000'000ULL / instructions_per_second;
+    }
+
+    uint64_t ticks_per_second_ns() {
+        return 1'000'000'000ULL / ticks_per_second;
+    }
     
     uint8_t set_shift(uint8_t dst, uint8_t src) {
         return shift_sets_vf ? dst : src;
